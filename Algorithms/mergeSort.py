@@ -29,6 +29,9 @@ def merge(arr, start, mid, end):
 
     while i < len(left) and j < len(right):
 
+        #tell pygame which two bars are being compared
+        yield arr.copy(), [start + i, mid + 1 + j]
+
         if left[i] <= right[j]:
             arr[k] = left[i]
             i += 1
@@ -39,16 +42,16 @@ def merge(arr, start, mid, end):
         k += 1
 
         # Send the current array to Pygame
-        yield arr.copy()
+        yield arr.copy(), []
 
     while i < len(left):
         arr[k] = left[i]
         i += 1
         k += 1
-        yield arr.copy()
+        yield arr.copy(), []
 
     while j < len(right):
         arr[k] = right[j]
         j += 1
         k += 1
-        yield arr.copy()
+        yield arr.copy(), []

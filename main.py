@@ -4,7 +4,6 @@ from buttons import Button
 from Algorithms.mergeSort import merge_sort_visual
 
 
-
 pg.init()
 
 #create a window
@@ -46,6 +45,21 @@ numbers = [
 sorting = False
 merge_comparisons = 0
 sort_generator = None
+
+
+#variables to control sorting
+sorting = False
+sort_finished = False
+
+sort_generator = None
+comparing = []
+
+sort_timer = 0
+sorted_timer = 0
+sorted_count = 0
+
+sort_speed = 1
+green_speed = 2
 
 def intro_screen():
     global alpha, intro_done, intro_timer, game_state
@@ -129,6 +143,52 @@ exit_button = Button(
     button_height
     )
 
+
+# ------------------------------------------------------------
+# ARAY SIZE BUTTONS, to choose the size of array from OPTIONS
+# ------------------------------------------------------------
+button_width = 140
+button_height = 60
+button_gap = 20
+
+sizes = [25, 50, 100, 200]
+
+size_buttons = []
+
+for i, size in enumerate(sizes):
+    x = (
+        WIDTH // 2
+        - (4 * button_width + 3 * button_gap) // 2
+        + i * (button_width + button_gap)
+    )
+
+    button = Button(
+        str(size),
+        x,
+        320,
+        button_width,
+        button_height
+        )
+    size_buttons.append(button)
+
+
+#button to exit OPTIONS
+back_button = Button(
+    "BACK",
+    WIDTH // 2 - 175,
+    500,
+    350,
+    70
+)
+
+#button to exit sorting bars screen
+sort_exit_button = Button(
+    "BACK",
+    WIDTH // 2 - 175,
+    HEIGHT - 80,
+    350,
+    70
+)
 def main_menu(event):
 
     screen.fill((20, 20, 30))
@@ -182,7 +242,7 @@ def main_menu(event):
     return "menu"
 
 
-def sorting_screen():
+def sorting_screen(event=None):
     screen.fill((20, 20, 30))
 
     title = title_font.render(
@@ -214,8 +274,13 @@ def sorting_screen():
         x = i * bar_width
         y = graph_bottom - bar_height
 
-        # Normal bar color
-        color = (255, 255, 100)
+        # Color the bars based on whether they are being compared
+        if i < sorted_count:
+            color = (100, 255, 100)  # Green for sorted bars
+        elif i in comparing:
+            color = (255, 100, 100)  # Red for bars being compared
+        else:
+            color = (255, 255, 100)
 
         pg.draw.rect(
             screen,
@@ -223,43 +288,10 @@ def sorting_screen():
             (x, y, bar_width - 2, bar_height)
         )
 
-# ------------------------------------------------------------
-# ARAY SIZE BUTTONS, to choose the size of array from OPTIONS
-# ------------------------------------------------------------
-button_width = 140
-button_height = 60
-button_gap = 20
-
-sizes = [25, 50, 100, 200]
-
-size_buttons = []
-
-for i, size in enumerate(sizes):
-    x = (
-        WIDTH // 2
-        - (4 * button_width + 3 * button_gap) // 2
-        + i * (button_width + button_gap)
-    )
-
-    button = Button(
-        str(size),
-        x,
-        320,
-        button_width,
-        button_height
-        )
-    size_buttons.append(button)
-
-
-#button to exit OPTIONS
-back_button = Button(
-    "BACK",
-    WIDTH // 2 - 175,
-    500,
-    350,
-    70
-)
-
+    sort_exit_button.draw(screen, subtitle_font, hover_sound)
+    if sort_exit_button.is_clicked(event):
+        return "menu"
+    return "sorting"
 
 def options_screen(event=None):
     global array_size, numbers
@@ -343,16 +375,39 @@ while running:
         elif game_state == "sorting":
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE and not sorting:
+                    #Shuffle the array if sorting is completed
+                    if sort_finished and sorted_count == len(numbers):
+                        rand.shuffle(numbers)
+                        sorted_timer = 0
+                        sorted_count = 0
+                        comparing = []
+                        sort_finished = False
+
                     sort_generator = merge_sort_visual(numbers)
                     sorting = True
 
+
     #Run sorting one step at a time
     if sorting:
-        try:
-            numbers[:] = next(sort_generator)
-        except StopIteration:
-            sorting = False
 
+        sort_timer += 1
+
+        if sort_timer >= sort_speed:
+            sort_timer = 0
+            try:
+                new_numbers, comparing = next(sort_generator)
+                numbers[:] = new_numbers
+            except StopIteration:
+                sorting = False
+                comparing = []
+                sort_finished = True
+
+    if sort_finished and sorted_count < len(numbers):
+        sorted_timer += 1
+
+        if sorted_timer >= green_speed:
+            sorted_timer = 0
+            sorted_count += 1
 
 
     # -------------------------
@@ -369,7 +424,7 @@ while running:
         options_screen(None)
 
     elif game_state == "sorting":
-        sorting_screen()
+        game_state = sorting_screen(event)
 
     #EXIT THE GAME
     if game_state == "exit":
